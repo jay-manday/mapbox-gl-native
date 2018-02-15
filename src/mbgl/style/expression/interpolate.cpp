@@ -230,9 +230,6 @@ mbgl::Value Interpolate<T>::serialize() const {
             auto p1 = cubicBezier.ub.getP1();
             auto p2 = cubicBezier.ub.getP2();
             serialized.emplace_back(std::vector<mbgl::Value>{{ cubicBezierTag, p1.first, p1.second, p2.first, p2.second }});
-        },
-        [&](const auto&) {
-            assert(false);
         }
     );
     serialized.emplace_back(input->serialize());

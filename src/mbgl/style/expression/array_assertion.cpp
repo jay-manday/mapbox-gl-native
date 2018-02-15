@@ -84,21 +84,18 @@ ParseResult ArrayAssertion::parse(const Convertible& value, ParsingContext& ctx)
 mbgl::Value ArrayAssertion::serialize() const {
     std::vector<mbgl::Value> serialized;
     serialized.emplace_back(getOperator());
-    getType().match(
-        [&] (type::Array& array) {
-            if (array.itemType.is<type::StringType>()
-             || array.itemType.is<type::NumberType>()
-             || array.itemType.is<type::BooleanType>()) {
-                serialized.emplace_back(type::toString(array.itemType));
-                if (array.N) {
-                    serialized.emplace_back(uint64_t(*array.N));
-                }
-            }
-        },
-        [&] (auto&) {
-            assert(false);
+    
+    
+    const auto array = getType().get<type::Array>();
+    if (array.itemType.is<type::StringType>()
+     || array.itemType.is<type::NumberType>()
+     || array.itemType.is<type::BooleanType>()) {
+        serialized.emplace_back(type::toString(array.itemType));
+        if (array.N) {
+            serialized.emplace_back(uint64_t(*array.N));
         }
-    );
+    }
+    
     serialized.emplace_back(input->serialize());
     return serialized;
 }

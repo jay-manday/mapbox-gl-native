@@ -42,11 +42,11 @@ template <class R, class... Params>
 struct Signature<R (Params...)> : SignatureBase {
     using Args = std::array<std::unique_ptr<Expression>, sizeof...(Params)>;
     
-    Signature(R (*evaluate_)(Params...), const std::string& name_) :
+    Signature(R (*evaluate_)(Params...), std::string name_) :
         SignatureBase(
             valueTypeToExpressionType<std::decay_t<typename R::Value>>(),
             std::vector<type::Type> {valueTypeToExpressionType<std::decay_t<Params>>()...},
-            name_
+            std::move(name_)
         ),
         evaluate(evaluate_)    {}
     
@@ -79,11 +79,11 @@ template <class R, typename T>
 struct Signature<R (const Varargs<T>&)> : SignatureBase {
     using Args = std::vector<std::unique_ptr<Expression>>;
     
-    Signature(R (*evaluate_)(const Varargs<T>&), const std::string& name_) :
+    Signature(R (*evaluate_)(const Varargs<T>&), std::string name_) :
         SignatureBase(
             valueTypeToExpressionType<std::decay_t<typename R::Value>>(),
             VarargsType { valueTypeToExpressionType<T>() },
-            name_
+            std::move(name_)
         ),
         evaluate(evaluate_)
     {}
@@ -114,11 +114,11 @@ template <class R, class... Params>
 struct Signature<R (const EvaluationContext&, Params...)> : SignatureBase {
     using Args = std::array<std::unique_ptr<Expression>, sizeof...(Params)>;
     
-    Signature(R (*evaluate_)(const EvaluationContext&, Params...), const std::string& name_) :
+    Signature(R (*evaluate_)(const EvaluationContext&, Params...), std::string name_) :
         SignatureBase(
             valueTypeToExpressionType<std::decay_t<typename R::Value>>(),
             std::vector<type::Type> {valueTypeToExpressionType<std::decay_t<Params>>()...},
-            name_
+            std::move(name_)
         ),
         evaluate(evaluate_)
     {}
@@ -175,8 +175,8 @@ struct Signature<Lambda, std::enable_if_t<std::is_class<Lambda>::value>>
 using Definition = CompoundExpressionRegistry::Definition;
 
 template <typename Fn>
-static std::unique_ptr<detail::SignatureBase> makeSignature(Fn evaluateFunction, const std::string& name) {
-    return std::make_unique<detail::Signature<Fn>>(evaluateFunction, name);
+static std::unique_ptr<detail::SignatureBase> makeSignature(Fn evaluateFunction, std::string name) {
+    return std::make_unique<detail::Signature<Fn>>(evaluateFunction, std::move(name));
 }
 
 std::unordered_map<std::string, CompoundExpressionRegistry::Definition> initializeDefinitions() {
