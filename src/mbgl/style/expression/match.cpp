@@ -45,12 +45,33 @@ mbgl::Value Match<T>::serialize() const {
     std::vector<mbgl::Value> serialized;
     serialized.emplace_back(getOperator());
     serialized.emplace_back(input->serialize());
-    // Sort the branches so serialization has a defined order, even though branch order doesn't affect evaluation
+    
+    // Sort so serialization has an arbitrary defined order, even though branch order doesn't affect evaluation
     std::map<T, std::shared_ptr<Expression>> sortedBranches(branches.begin(), branches.end());
+
+    // Group branches by unique match expression to support condensed serializations
+    // of the form [case1, case2, ...] -> matchExpression
+    std::map<Expression*, size_t> outputLookup;
+    std::vector<std::pair<Expression*, std::vector<mbgl::Value>>> groupedByOutput;
     for (auto& entry : sortedBranches) {
-        serialized.emplace_back(entry.first);
-        serialized.emplace_back(entry.second->serialize());
+        auto outputIndex = outputLookup.find(entry.second.get());
+        if (outputIndex == outputLookup.end()) {
+            // First time seeing this output, add it to the end of the grouped list
+            outputLookup[entry.second.get()] = groupedByOutput.size();
+            groupedByOutput.emplace_back(entry.second.get(), std::vector<mbgl::Value>{{entry.first}});
+        } else {
+            // We've seen this expression before, add the label to that output's group
+            groupedByOutput[outputIndex->second].second.emplace_back(entry.first);
+        }
     };
+    
+    for (auto& entry : groupedByOutput) {
+        entry.second.size() == 1
+            ? serialized.emplace_back(entry.second[0])       // Only a single label matches this output expression
+            : serialized.emplace_back(entry.second);         // Array of literal labels pointing to this output expression
+        serialized.emplace_back(entry.first->serialize());   // The output expression itself
+    }
+    
     serialized.emplace_back(otherwise->serialize());
     return serialized;
 }
